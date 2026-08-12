@@ -1,0 +1,30 @@
+{
+  "name": "fcu-ne-chat-bot",
+  "version": "1.3.1",
+  "description": "FCU Fuxing Dormitory Network Repair Assistant",
+  "main": "js/chat.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "lint": "eslint . \"gas/**/*.gs\""
+  },
+  "keywords": [
+    "fcu",
+    "dormitory",
+    "chatbot",
+    "gas"
+  ],
+  "author": "chinglin-k",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chinglin-k/FCU_NE_Chat_Bot.git"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0"
+  }
+}
