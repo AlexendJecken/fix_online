@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.google.com https://www.gstatic.com; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://script.google.com https://script.googleusercontent.com https://generativelanguage.googleapis.com https://www.google.com; img-src 'self' data:; frame-src https://www.google.com; object-src 'none';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.google.com https://www.gstatic.com; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://script.google.com https://script.googleusercontent.com https://www.google.com; img-src 'self' data:; frame-src https://www.google.com; object-src 'none';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>逢甲大學福星宿舍網路報修助理 | FCU Fuxing Dormitory Network Repair Assistant</title>
   <meta name="description" content="逢甲大學福星宿舍網路報修 Chatbot，提供網路教學、常見問題解答，以及線上報修申請服務。FCU Fuxing Dormitory Network Repair Chatbot — offering network tutorials, FAQ, and online repair submission.">
@@ -116,17 +116,17 @@
           <div class="form-row">
             <div class="form-group">
               <label for="field-room"><span data-i18n="form.room.label">房號</span> <span class="required" data-i18n-aria-label="form.required.aria" aria-label="必填">*</span></label>
-              <input type="text" id="field-room" name="roomNumber" placeholder="e.g. A123" required maxlength="8" pattern="[A-Za-z0-9-]{1,8}">
+              <input type="text" id="field-room" name="roomNumber" data-i18n-placeholder="form.room.placeholder" placeholder="例：A123" required maxlength="8" pattern="[A-Za-z0-9-]{1,8}">
             </div>
             <div class="form-group">
               <label for="field-bed"><span data-i18n="form.bed.label">床號</span> <span class="required" data-i18n-aria-label="form.required.aria" aria-label="必填">*</span></label>
-              <input type="text" id="field-bed" name="bedNumber" placeholder="e.g. 1" required maxlength="3" inputmode="numeric" pattern="[0-9]{1,3}">
+              <input type="text" id="field-bed" name="bedNumber" data-i18n-placeholder="form.bed.placeholder" placeholder="例：1" required maxlength="3" inputmode="numeric" pattern="[0-9]{1,3}">
             </div>
           </div>
 
           <div class="form-group">
             <label for="field-phone"><span data-i18n="form.phone.label">手機號碼</span> <span class="required" data-i18n-aria-label="form.required.aria" aria-label="必填">*</span></label>
-            <input type="tel" id="field-phone" name="phone" placeholder="e.g. 0912345678" required autocomplete="tel" maxlength="10" inputmode="numeric" pattern="[0-9]{10}">
+            <input type="tel" id="field-phone" name="phone" data-i18n-placeholder="form.phone.placeholder" placeholder="例：0912345678" required autocomplete="tel" maxlength="10" inputmode="numeric" pattern="[0-9]{10}">
           </div>
 
           <div class="form-group">
@@ -182,18 +182,103 @@
           </div>
         </form>
 
-        <!-- ── 送出成功畫面（送出後顯示，取代表單）── -->
-        <div id="modal-success-view" class="modal-success-view is-hidden">
-          <div class="success-icon-wrap" aria-hidden="true">✅</div>
-          <h3 class="success-title" data-i18n="success.title">報修成功！</h3>
-          <p class="success-desc" data-i18n="success.desc">感謝您的回報，<br>網管人員收到後會盡快與您聯絡。</p>
-          <div class="success-bar-wrap" aria-label="自動關閉進度 / Auto-close progress">
-            <div class="success-bar" id="success-progress-bar"></div>
-          </div>
-        </div>
-
       </div>
     </div>
+
+    <!-- ── Query Case Modal ── -->
+    <div class="modal-overlay" id="query-modal" role="dialog" aria-modal="true" aria-labelledby="query-modal-title" hidden>
+      <div class="modal-container query-modal-container">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title" id="query-modal-title" data-i18n="query.modal.title">🔍 查詢報修案件</h2>
+            <p class="modal-subtitle" data-i18n="query.modal.subtitle">請輸入學號以查詢您的報修進度。</p>
+          </div>
+          <button class="modal-close" id="query-modal-close-btn" data-i18n-aria-label="query.modal.close.aria" aria-label="關閉查詢視窗">✕</button>
+        </div>
+
+        <form class="report-form query-form" id="query-form" novalidate>
+          <div class="form-group">
+            <label for="query-student-id"><span data-i18n="query.studentId.label">學號</span> <span class="required" aria-label="必填">*</span></label>
+            <input type="text" id="query-student-id" name="queryStudentId" data-i18n-placeholder="query.studentId.placeholder" placeholder="例：D1234567" required maxlength="8" pattern="[A-Za-z][0-9]{7}" autocomplete="off">
+          </div>
+
+          <div id="query-error-msg" class="form-error" role="alert" hidden></div>
+
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" id="query-cancel-btn" data-i18n="query.cancel">取消</button>
+            <button type="submit" class="btn-primary" id="query-submit-btn">
+              <span class="btn-text" data-i18n="query.submit">查詢</span>
+              <span class="btn-loading" hidden>
+                <span class="loading-dot"></span>
+                <span class="loading-dot"></span>
+                <span class="loading-dot"></span>
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ── Wi-Fi 機教學 Modal ── -->
+    <div class="modal-overlay" id="wifi-modal" role="dialog" aria-modal="true" aria-labelledby="wifi-modal-title" hidden>
+      <div class="modal-container wifi-modal-container">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title" id="wifi-modal-title" tabindex="-1" data-i18n="wifi.modal.title">📡 Wi-Fi 機設定教學</h2>
+            <p class="modal-subtitle" data-i18n="wifi.modal.subtitle">請依步驟完成設定，如有疑問請聯絡網管。</p>
+          </div>
+          <button class="modal-close" id="wifi-modal-close-btn" data-i18n-aria-label="wifi.modal.close.aria" aria-label="關閉 Wi-Fi 機教學">✕</button>
+        </div>
+
+        <div class="wifi-modal-body">
+
+          <div class="wifi-step">
+            <div class="wifi-step-header">
+              <span class="wifi-step-num">1</span>
+              <span class="wifi-step-title" data-i18n="wifi.step1.title">連接電源與網路線</span>
+            </div>
+            <p class="wifi-step-desc" data-i18n="wifi.step1.desc">將 Wi-Fi 機的電源線接上插座，並將網路線插入 Wi-Fi 機的 <strong>WAN 孔</strong>。</p>
+          </div>
+
+          <div class="wifi-step">
+            <div class="wifi-step-header">
+              <span class="wifi-step-num">2</span>
+              <span class="wifi-step-title" data-i18n="wifi.step2.title">連接裝置</span>
+            </div>
+            <ul class="wifi-step-list">
+              <li data-i18n="wifi.step2.li1"><strong>使用電腦：</strong>將另一條網路線一端接到電腦，另一端接到 Wi-Fi 機的 <strong>LAN 孔</strong>。</li>
+              <li data-i18n="wifi.step2.li2"><strong>使用手機：</strong>進入手機「設定」➡️「Wi-Fi」，搜尋並連接該 Wi-Fi 機的無線網路。</li>
+            </ul>
+          </div>
+
+          <div class="wifi-step">
+            <div class="wifi-step-header">
+              <span class="wifi-step-num">3</span>
+              <span class="wifi-step-title" data-i18n="wifi.step3.title">進入後台管理介面</span>
+            </div>
+            <p class="wifi-step-desc" data-i18n="wifi.step3.desc">開啟瀏覽器，在網址列輸入 Wi-Fi 機背面標示的<strong>後台管理網址</strong>，即可進入設定頁面。</p>
+          </div>
+
+          <div class="wifi-step">
+            <div class="wifi-step-header">
+              <span class="wifi-step-num">4</span>
+              <span class="wifi-step-title" data-i18n="wifi.step4.title">設定路由器模式與固定 IP</span>
+            </div>
+            <ol class="wifi-step-ol">
+              <li data-i18n="wifi.step4.li1">在後台介面中選擇「<strong>路由器模式</strong>」</li>
+              <li data-i18n="wifi.step4.li2">找到「<strong>設定 IP 介面</strong>」選項</li>
+              <li data-i18n="wifi.step4.li3">選擇「<strong>固定 IP</strong>」，並依照網路孔旁貼紙上標示的資訊完整填寫</li>
+            </ol>
+          </div>
+
+          <div class="wifi-modal-actions">
+            <button type="button" class="btn-secondary" id="wifi-modal-cancel-btn" data-i18n="wifi.modal.cancel">關閉</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
 
     <!-- ── Input Area ── -->
     <footer class="chat-footer" role="contentinfo">
@@ -223,13 +308,15 @@
 
   </div><!-- /#app -->
 
-  <!-- Scripts（載入順序：config → counter → intent → report → teams → chat） -->
+  <!-- Scripts（載入順序：i18n → config → counter → intent → report → query → teams → chat） -->
   <script src="js/i18n.js"></script>
   <script src="js/config.js"></script>
   <script src="js/counter.js"></script>
   <script src="js/intent.js"></script>
   <script src="js/report.js"></script>
+  <script src="js/query.js"></script>
   <script src="js/teams.js"></script>
+  <script src="js/wifi-modal.js"></script>
   <script src="js/chat.js"></script>
 </body>
 </html>

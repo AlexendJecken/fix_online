@@ -81,7 +81,7 @@
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/*    Reset    */
+/* ── Reset 基礎設定 ── */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -482,6 +482,21 @@ a:hover {
   color: var(--color-white);
 }
 
+/* ── 教學按鈕：藍色強調樣式 ── */
+.quick-btn.accent {
+  background: linear-gradient(135deg, #0ea5e9, var(--color-accent-blue));
+  border-color: transparent;
+  color: var(--color-white);
+  box-shadow: 0 2px 12px rgba(56, 189, 248, 0.35);
+  font-weight: 600;
+}
+
+.quick-btn.accent:hover:not(:disabled) {
+  box-shadow: var(--glow-blue-strong), 0 4px 16px rgba(56, 189, 248, 0.45);
+  transform: translateY(-2px);
+  color: var(--color-white);
+}
+
 .quick-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -630,9 +645,9 @@ a:hover {
   letter-spacing: 0.03em;
 }
 
-/*                                       
-   MODAL    修表單
-                                       */
+/* ============================================================
+   MODAL 報修表單
+   ============================================================ */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -817,7 +832,7 @@ a:hover {
   flex-shrink: 0;
 }
 
-/*    示   */
+/* ── 欄位提示 ── */
 .field-hint {
   font-size: 12px;
   color: var(--color-text-secondary);
@@ -832,7 +847,7 @@ a:hover {
   color: var(--color-accent-orange);
 }
 
-/* 表單 誤訊息 */
+/* ── 表單錯誤訊息 ── */
 .form-error {
   font-size: 13px;
   color: var(--color-danger-light);
@@ -912,15 +927,15 @@ a:hover {
 .loading-dot:nth-child(2) { animation-delay: 0.2s; }
 .loading-dot:nth-child(3) { animation-delay: 0.4s; }
 
-/*    Success State    */
+/* ── Success State（報修成功訊息泡泡） ── */
 .msg-wrapper.success .msg-bubble {
   background: rgba(34, 197, 94, 0.1);
   border-color: rgba(34, 197, 94, 0.25);
 }
 
-/*                                       
-   RESPONSIVE       
-                                       */
+/* ============================================================
+   RESPONSIVE 響應式設計
+   ============================================================ */
 @media (max-width: 640px) {
   :root {
     --header-height: 60px;
@@ -929,7 +944,7 @@ a:hover {
   .header-title { font-size: 13px; }
   .header-subtitle { display: none; }
 
-  /*    窄螢幕隱   器（JS 仍照常    是不顯示     */
+  /* 窄螢幕隱藏計數器（JS 仍照常累加，只是不顯示） */
   .header-counter { display: none; }
 
   .chat-messages { padding: 14px 12px; gap: 10px; }
@@ -946,7 +961,7 @@ a:hover {
 
   .form-row { grid-template-columns: 1fr; gap: 16px; }
 
-  /* iOS Safari：input font-size < 16px  觸 自 縮  強制設為 16px */
+  /* iOS Safari：input font-size < 16px 會觸發自動縮放，強制設為 16px */
   .form-group input,
   .form-group textarea,
   .chat-input {
@@ -957,13 +972,13 @@ a:hover {
   .btn-primary, .btn-secondary { width: 100%; justify-content: center; }
 }
 
-/*    極   （iPhone SE 等   60px）   */
+/* ── 極窄螢幕（iPhone SE 等 <360px） ── */
 @media (max-width: 360px) {
-  /* Teams      icon，隱   */
+  /* Teams 按鈕文字隱藏，僅保留 icon */
   .teams-link-text { display: none; }
-  /* 縮  padding ， 低    寬 */
+  /* 縮小 padding，降低最小寬度需求 */
   .header-teams-link { padding: 5px 8px; gap: 4px; }
-  /* aria-label  已     礙  影  */
+  /* aria-label 已提供，隱藏文字不影響無障礙 */
 }
 
 @media (min-width: 760px) {
@@ -987,89 +1002,6 @@ a:hover {
     transition-duration: 0.01ms !important;
   }
 }
-
-/*                                       
-    修   面（Modal   success view 
-                                       */
-
-/* .is-hidden：通用  工具 class，優  高於   display 設  */
-.is-hidden {
-  display: none !important;
-}
-
-.modal-success-view {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 28px 36px;
-  gap: 12px;
-  text-align: center;
-  animation: fadeInUp 0.4s ease both;
-}
-
-.success-icon-wrap {
-  font-size: 64px;
-  line-height: 1;
-  animation: successPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-  filter: drop-shadow(0 0 16px rgba(74, 222, 128, 0.5));
-}
-
-.success-title {
-  margin: 8px 0 4px;
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--color-success);
-  letter-spacing: 0.02em;
-}
-
-.success-desc {
-  font-size: 14px;
-  color: var(--color-text-secondary);
-  line-height: 1.7;
-  margin: 0 0 20px;
-}
-
-/*  數 度 */
-.success-bar-wrap {
-  width: 100%;
-  max-width: 260px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 99px;
-  overflow: hidden;
-}
-
-.success-bar {
-  height: 100%;
-  width: 100%;
-  background: linear-gradient(90deg, var(--color-accent-orange), #fbbf24);
-  border-radius: 99px;
-  transform-origin: left;
-}
-
-/* 動畫 */
-@keyframes successPop {
-  0%   { transform: scale(0.3); opacity: 0; }
-  70%  { transform: scale(1.15); }
-  100% { transform: scale(1);   opacity: 1; }
-}
-
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* 雙語顯示：中文主要文字下方的英文輔助翻譯 | Bilingual: English translation helper */
-.text-en { font-size: 0.82em; color: var(--color-text-secondary); font-style: italic; font-weight: 400; opacity: 0.85; letter-spacing: 0.015em; line-height: 1.35; }
-
-/* 讓 block 元素內的 <span class="text-en"> 換行獨立顯示 */
-span.text-en:not([aria-hidden]) {
-  display: block;
-  margin-top: 2px;
-}
-
-
 
 /* ============================================================
    語言切換懸浮按鈕（中/EN Toggle）
@@ -1182,3 +1114,217 @@ span.text-en:not([aria-hidden]) {
 .recaptcha-disclosure a:hover {
   color: var(--color-accent-blue);
 }
+
+/* ── Query Modal ── */
+.query-modal-container {
+  max-width: 420px;
+}
+
+.query-form {
+  padding: 20px 24px 28px;
+}
+
+/* ── Query Result Cards（聊天泡泡中的案件卡片）── */
+.msg-bubble .query-case-card {
+  background: rgba(56, 189, 248, 0.06);
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.msg-bubble .query-case-card + .query-case-card {
+  margin-top: 10px;
+}
+
+.query-case-card .status-tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.query-case-card .status-tag.pending {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.query-case-card .status-tag.dispatched {
+  background: rgba(56, 189, 248, 0.12);
+  color: var(--color-accent-blue);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.query-case-card .status-tag.completed {
+  background: rgba(74, 222, 128, 0.12);
+  color: var(--color-success);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+/* ============================================================
+   Wi-Fi 機教學 Modal
+   ============================================================ */
+
+/* 容器尺寸（對齊 query-modal-container 命名風格） */
+.wifi-modal-container {
+  max-width: 480px;
+}
+
+/* Modal 本體 padding */
+.wifi-modal-body {
+  padding: 20px 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── 單一步驟卡片 ── */
+.wifi-step {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  transition: border-color 0.2s var(--ease-out);
+}
+
+.wifi-step:hover {
+  border-color: var(--glass-border-active);
+}
+
+/* ── 步驟標題列（編號 + 標題） ── */
+.wifi-step-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+/* ── 步驟編號圓形標籤 ── */
+.wifi-step-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-accent-orange), var(--color-accent-orange-light));
+  color: var(--color-white);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+}
+
+/* ── 步驟標題文字 ── */
+.wifi-step-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* ── 步驟說明文字 ── */
+.wifi-step-desc {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+
+.wifi-step-desc strong {
+  color: var(--color-accent-blue);
+  font-weight: 600;
+}
+
+/* ── 步驟無序清單（連接裝置） ── */
+.wifi-step-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+
+.wifi-step-list li::before {
+  content: '•';
+  color: var(--color-accent-orange);
+  font-weight: 700;
+  margin-right: 6px;
+}
+
+.wifi-step-list strong {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+/* ── 步驟有序清單（設定 IP） ── */
+.wifi-step-ol {
+  list-style: none;
+  counter-reset: wifi-step-counter;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+
+.wifi-step-ol li {
+  counter-increment: wifi-step-counter;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.wifi-step-ol li::before {
+  content: counter(wifi-step-counter) '.';
+  color: var(--color-accent-orange);
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.wifi-step-ol strong {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+/* ── 操作按鈕區（僅「關閉」按鈕，靠右對齊） ── */
+.wifi-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+/* ── 響應式：窄螢幕調整 ── */
+@media (max-width: 640px) {
+  .wifi-modal-body {
+    padding: 16px 18px 24px;
+    gap: 12px;
+  }
+
+  .wifi-step {
+    padding: 12px 14px;
+  }
+
+  .wifi-step-title {
+    font-size: 13px;
+  }
+
+  .wifi-modal-actions {
+    justify-content: stretch;
+  }
+
+  .wifi-modal-actions .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+}
+

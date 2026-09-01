@@ -19,6 +19,7 @@ const Intent = (() => {
     BUTTON_TEACH:   'BUTTON_TEACH',    // 教學相關
     BUTTON_SETTING: 'BUTTON_SETTING',  // 常見問題（轉接器、WiFi 帳號、寢室 WiFi 等）
     BUTTON_REPORT:  'BUTTON_REPORT',   // 明確要報修
+    BUTTON_QUERY:   'BUTTON_QUERY',    // 查詢報修案件狀態
     STICKER_PORT:   'STICKER_PORT',    // IP貼紙缺漏 / 網路孔故障
     NON_NETWORK:    'NON_NETWORK',     // 非網管業務（冷氣等）
     UNKNOWN:        'UNKNOWN'          // 無法判斷
@@ -26,8 +27,8 @@ const Intent = (() => {
 
   /**
    * GAS classify 逾時（毫秒）
-   * GAS 後端採多模型備援（最多 9 個模型，每個最多 2 次重試，每次間隔 1.5s）
-   * 最壞情況：9×2×1.5s ≈ 27s，設 25s 為實務上限（超過此時間通常為網路問題）
+   * GAS 後端採多模型備援（最多 6 個模型，每個最多 2 次重試，每次間隔 1.5s）
+   * 最壞情況：6×2×1.5s ≈ 18s，設 25s 為實務上限（超過此時間通常為網路問題）
    */
   const CLASSIFY_TIMEOUT_MS = 25000;
 
@@ -97,7 +98,7 @@ const Intent = (() => {
 
       let data = await res.json();
 
-      // Token 失效：自動重取後重試一次（防止無限迄迴）
+      // Token 失效：自動重取後重試一次（僅重試一次，防止無限循環）
       if (data.error === 'INVALID_TOKEN') {
         console.warn('[Intent][Token] INVALID_TOKEN，重取 token 後重試一次...');
         const newToken = await Chat.refreshToken();
@@ -111,7 +112,7 @@ const Intent = (() => {
       }
 
       // 頻率限制錯誤
-      if (!data.success && data.error === '請求過於頻繁，請稍後再試') {
+      if (!data.success && data.error === 'RATE_LIMITED') {
         console.warn('[Intent][頻率限制]', data.error);
         return _systemErrorFallback;
       }
