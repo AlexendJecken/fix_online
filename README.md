@@ -4,24 +4,22 @@
 
 [![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Live-brightgreen)](https://chinglin-k.github.io/FCU_NE_Chat_Bot/)
 [![Run Validation Unit Tests](https://github.com/chinglin-k/FCU_NE_Chat_Bot/actions/workflows/test.yml/badge.svg)](https://github.com/chinglin-k/FCU_NE_Chat_Bot/actions/workflows/test.yml)
-[![Version](https://img.shields.io/badge/Version-v1.3.1-blue)](https://github.com/chinglin-k/FCU_NE_Chat_Bot/blob/main/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v1.4.5-blue.svg)](CHANGELOG.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**版本 / Version**：v1.3.1  
+**版本 / Version**：v1.4.5
 
-> [!WARNING]
-> **試算表 ID 安全性警告**
-> 舊版 commit 曾寫死真實的 Spreadsheet ID，請務必建立新試算表並輪替（Rotate）新的 SPREADSHEET_ID，勿將有存取權限的 ID 再次提交至 Git。
-
-**最後更新 / Last Updated**：2026-08-09
+**最後更新 / Last Updated**：2026-08-29
 
 ---
 
 ## 功能特色
 
-- 📚 **網路教學**：提供 Windows / Mac 宿舍網路設定 PDF 教學
+- 📚 **網路教學**：提供 Windows / Mac 宿舍網路設定 PDF 教學，另有站內 **Wi-Fi 機設定教學 Modal**（4 步驟圖文說明，v1.4.4 新增）
 - ⚙️ **常見問題**：轉接器驅動程式、WiFi 帳號密碼、寢室 WiFi 訊號、冷氣電費儲值等常見問題解答
   * 🎯 支援「子主題精準回覆」：問轉接器只顯示轉接器卡片、問帳密只顯示帳密卡片
 - 🔧 **線上報修通報**：填寫報修表單自動寫入 Google 試算表（前後端雙重格式驗證：學號 1 字母+7 數字、手機 10 位數字、床號 1–3 位數字）
+- 🔍 **報修案件查詢**：學生輸入學號即可查詢自己的報修案件狀態（僅顯示安全欄位，不含手機號碼等敏感資訊）
 - 🤖 **LLM 語意分析**：透過 Gemini API 三層 RPM 分級、共 6 個模型自動備援機制判斷使用者意圖
   * 支援「理解失敗」 vs 「系統錯誤」兩層 fallback 訊息區分
   * Gemini 全部失敗時，降級至內建 **19 語系 Rule-based 關鍵字備援分類器**，確保國際學生在 LLM 服務中斷時仍能取得基本可用的回覆
@@ -31,7 +29,7 @@
 - 🛡️ **多層安全防護**：
   * 個資與使用者輸入一律透過 POST Body 傳送，不暴露於瀏覽器網址列或伺服器 Log
   * 一次性 Session Token（120 秒有效、用一次即失效）防止偽造請求
-  * 裝置級 Client ID (`localStorage`) + 全域級雙層流量限制（CacheService，涵蓋 classify / report / counter_get / counter_increment 四個端點）
+  * 裝置級 Client ID (`localStorage`) + 全域級雙層流量限制（CacheService，涵蓋 classify / report / query / counter_get / counter_increment 五個端點）
   * reCAPTCHA v3 隱形驗證，防止 GAS Web App URL 外洩後遭腳本大量濫用
   * Prompt Injection 防護（長度截斷 500 字、控制字元 / Zero-Width 字元清除、引號隔離）
   * 學號 / 手機 / 床號 / 房號前後端雙重格式驗證，後端一律先必填、後格式
@@ -64,7 +62,11 @@
 | 16 | 墨西哥西班牙文 (Spanish - Mexico) | `es-MX` (墨西哥) | reparar, puerto de pared, adaptador, contraseña, manual |
 | 17 | 摩西文 / 法文 (Mooré / French) | `mos` (布吉納法索) | maane, prise murale, adaptateur, compte, manuel |
 | 18 | 蒙古文 (Mongolian) | `mn` | засвар, ханын порт, адаптер, нууц үг, заавар |
-| 19 | 埃及阿拉伯文 (Egyptian Arabic) & 厄瓜多西班牙文 (Spanish - Ecuador) | `ar-EG` / `es-EC` | تصليح, منفذ حائط, محول, كلمة السر, دليل |
+| 19 | 埃及阿拉伯文 (Egyptian Arabic) & 厄瓜多西班牙文 (Spanish - Ecuador) ¹ | `ar-EG` / `es-EC` | تصليح, منفذ حائط, محول, كلمة السر, دليل／reparar, avería, contraseña |
+
+¹ 埃及阿拉伯文與厄瓜多西班牙文合併列於同一編號：埃及阿拉伯文有專屬關鍵字（如「مش شغال」），
+厄瓜多西班牙文則與第 16 項墨西哥西班牙文共用同一組通用西班牙語關鍵字（西班牙語各地區用詞差異極小），
+未另外建置地區專屬詞彙，故合併計為 1 項、不獨立計數。
 
 ---
 
@@ -153,14 +155,14 @@ GitHub → Settings → Pages → Source: **main** / **(root)**
 | reCAPTCHA Secret | 僅儲存於 GAS Script Properties，不寫入程式碼；前端僅持有公開的 Site Key |
 | 報修個資傳輸 | 全面採 **POST Body (text/plain)** 傳送，不暴露於瀏覽器網址列或伺服器 Access Log |
 | 請求授權 | 一次性 Session Token（120 秒有效、用一次即失效），配合裝置級 Client ID 做流量限制 |
-| 流量防護 | 四組雙層（使用者級＋全域級）CacheService 限流：`classify` 使用者 12/分鐘、全域 60/分鐘；`report` 使用者 5/分鐘、全域 20/分鐘；`counter_get` 使用者 30/分鐘、全域 120/分鐘；`counter_increment` 使用者 3/分鐘、全域 500/分鐘（v1.3.1：修復原本使用者級上限 999999 形同不限制的缺陷，並將全域上限由 30 調升為 500，避免新生入住等尖峰時段誤擋合法計數）|
+| 流量防護 | 五組雙層（使用者級＋全域級）CacheService 限流：`classify` 使用者 12/分鐘、全域 60/分鐘；`report` 使用者 5/分鐘、全域 20/分鐘；`query` 使用者 10/分鐘、全域 40/分鐘；`counter_get` 使用者 30/分鐘、全域 120/分鐘；`counter_increment` 使用者 3/分鐘、全域 500/分鐘（v1.3.1：修復原本使用者級上限 999999 形同不限制的缺陷，並將全域上限由 30 調升為 500，避免新生入住等尖峰時段誤擋合法計數）|
 | 濫用防護（報修表單） | reCAPTCHA v3 隱形驗證（風險分數門檻 0.5），防止 GAS_URL 外洩後遭腳本大量送出假報修單 |
 | 學號 / 手機 / 床號 / 房號格式 | 前端與 GAS 端雙重驗證，且後端一律「先必填、後格式」（學號：1 字母+7 數字；手機：10 位數字；床號：1–3 位數字；房號：僅限英數字與連字號）。v1.3.1 修復：舊版後端寫法在欄位為空字串時會整段跳過驗證，等同必填形同虛設，現已修正 |
 | Prompt Injection | 輸入截斷 500 字、移除控制字元、Zero-Width 字元、引號隔離輸入 |
 | XSS | 使用者輸入經 `_escapeHTML` 處理（含 `"` `'` 轉義）；Bot 訊息來自內部常數，僅供內部常數使用 Markdown 渲染 |
 | 後端欄位驗證 | GAS `writeReport()` 先檢查必填（trim 後不得為空）、再檢查格式、最後截斷長度，三階段皆通過才寫入試算表（v1.3.1 修復必填繞過問題） |
 | 錯誤訊息資訊揭露 | 所有後端例外一律回傳固定代碼 `INTERNAL_ERROR`，不回傳原始例外內容給前端，避免內部實作細節外洩（CWE-209，v1.3.1 修復） |
-| Git 歷史機密殘留 | 舊版 commit 曾寫死真實 Spreadsheet ID；已用 `git-filter-repo` 於獨立環境清除並驗證，實際覆蓋 GitHub 遠端歷史需專案擁有者手動執行 force push（見上方 WARNING 區塊） |
+| Git 歷史機密殘留 | ✅ 已解除：舊版 commit 曾寫死真實 Spreadsheet ID。`main`／tag 歷史已用 `git-filter-repo` 於獨立沙盒環境清除並驗證，已由專案擁有者 force push 完成。該 ID 目前仍可透過 GitHub `refs/pull/*/head`（已關閉／已合併 PR 的參照）查得——這是 `git-filter-repo` + force push 的已知限制，無法觸及 PR ref——**但專案擁有者已確認完成 Spreadsheet ID 輪替，舊 ID 已失效，故該殘留參照已無實質風險**。建議仍可洽 GitHub Support 清除 PR ref 快取以求乾淨，但非急迫項目 |
 
 ---
 
