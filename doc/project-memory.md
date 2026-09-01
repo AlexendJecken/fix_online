@@ -3,8 +3,8 @@
 > 僅在確認新決策、修改既有決策或發現重要限制時更新。
 > 每次更新須記錄日期、原因與影響範圍。
 
-**版本 / Version**：v1.3.1  
-**最後更新 / Last Updated**：2026-08-09
+**版本 / Version**：v1.4.5  
+**最後更新 / Last Updated**：2026-08-29
 
 ---
 
@@ -32,6 +32,9 @@
 | 2026-08-08 | 學號格式強驗證：1 位英文字母 + 7 位數字 | 對齊校方學號標準格式（如 `D1234567`），前後端雙重 RegEx 驗證 | `index.html`、`js/report.js`、`gas/Code.gs` |
 | 2026-08-08 | 19 語系 Rule-based 備援分類器 | 確保 Gemini 失敗時仍可精準回應各國籍學生 | `gas/Code.gs`、`README.md` |
 | 2026-08-08 | 建置 Node.js 原生單元測試與 ESLint 9 Flat Config | 建立 `gas-mocks.js` 模擬 GAS 全域環境，確保 CI/CD 自動化測試通過 | `package.json`、`eslint.config.js`、`test/` |
+| 2026-08-21 | 新增報修案件查詢功能 (`queryReport`) | 學生輸入學號即可查詢自己的報修進度；回傳欄位刻意排除姓名與手機號碼（個資最小化），所有欄位值前端渲染前做 HTML 轉義（`_esc()`，BUG-13 XSS 防護）；頻率限制 10/分鐘·40/分鐘 | `gas/Code.gs`、`js/query.js`、`js/chat.js`、`js/config.js`、`index.html` |
+| 2026-08-21 | Gemini 意圖分類新增 `BUTTON_QUERY` 代碼 | Prompt 與 `_ruleBasedClassify()` 同步新增，涵蓋 19 語系備援關鍵字 | `gas/Code.gs`、`js/intent.js`、`js/config.js` |
+| 2026-08-21 | 主選單按鈕順序調整：查詢在報修前 | 查詢是唯讀操作、使用門檻較低，放在報修前可提高可見度 | `js/chat.js` |
 
 ---
 
@@ -50,8 +53,25 @@
 
 - GitHub Pages 為靜態托管，**無法在前端執行伺服器端邏輯**
 - GAS 免費版每日執行次數限制：6 分鐘執行時間，每日可處理約 500+ 次分類
-- **Git 歷史清除的殘留風險（v1.3.1 新增）**：即使用 `git-filter-repo` 清除機密後
-  force push 到 GitHub，已關閉／已合併 PR 的「Files changed」分頁、第三方封存
-  服務（如 Software Heritage）、其他人的 fork，仍可能保留舊版明碼內容，
-  Git 層級操作無法強制觸及這些位置。真正解除風險的關鍵是**輪替 Spreadsheet
-  ID 本身**，而非僅依賴歷史清除。
+- **Git 歷史清除的殘留風險（v1.3.1 新增；v1.4.2 實測確認並由專案擁有者澄清）**：
+  即使用 `git-filter-repo` 清除機密後 force push 到 GitHub，已關閉／已合併 PR 的
+  `refs/pull/*/head` 參照、第三方封存服務（如 Software Heritage）、其他人的
+  fork，仍可能保留舊版明碼內容，Git 層級操作無法強制觸及這些位置。
+  **v1.4.2 稽核時已用 `git ls-remote` + `git fetch refs/pull/*/head` 實際驗證**：
+  真實 Spreadsheet ID（`1BUnG_...79uI`，已遮蔽，v1.4.5 依 AGENTS.md 規範修訂）確實仍可
+  透過 PR ref 取得。**專案擁有者已確認該 ID 已完成輪替，舊 ID 已失效**，故此
+  殘留參照目前僅為歷史資訊、無實質風險；`README.md`／`doc/architecture.md`
+  已於 v1.4.2 更新為反映此現況。若未來有其他機密（API Key 等）誤入歷史，
+  仍建議洽 GitHub Support 清除 PR ref 層級快取，而非僅依賴歷史清除 + 輪替。
+
+---
+
+## v1.4.4／v1.4.5 決策記錄（2026-08-29）
+
+| 日期 | 決策 | 理由 | 影響檔案 |
+|---|---|---|---|
+| 2026-08-29 | 新增 Wi-Fi 機設定教學 Modal（`js/wifi-modal.js`） | 教學選單原僅有 Windows / Mac 兩個系統別 PDF 連結，Wi-Fi 分享器設定缺乏站內圖文教學；改為純前端靜態 4 步驟 Modal，不呼叫 GAS，不消耗任何頻率限制配額 | `js/wifi-modal.js`（新增）、`js/chat.js`、`js/config.js`、`js/i18n.js`、`index.html`、`css/style.css` |
+| 2026-08-29 | 查詢案件完成後補上「回主選單／報修」按鈕 | 原本查詢完成後對話即中斷，使用者需自行輸入文字才能繼續操作；`Chat.onQuerySuccess()` 補上按鈕群組，與報修成功後的體驗一致 | `js/chat.js`、`js/query.js` |
+| 2026-08-29 | 全面稽核修復（BUG-44~51，詳見 `CHANGELOG.md`） | 例行程式碼 vs. 文件一致性稽核，本次聚焦新功能（Wi-Fi Modal）上線後遺漏的 `eslint.config.js` 全域宣告、i18n 涵蓋率、無障礙焦點管理、死碼清理 | 詳見 `CHANGELOG.md` v1.4.5 |
+| 2026-08-29 | 移除報修表單「Modal 內成功畫面」死碼 | `_handleSuccess()` 自 v1.1.0 行為回復後即直接關閉 Modal、於聊天區顯示成功訊息，`#modal-success-view`／`.is-hidden`／`.has-success`／`.text-en` 等標記與樣式已無任何程式路徑會觸發，經逐一 `grep` 確認零引用後移除 | `index.html`、`js/report.js`、`js/i18n.js`、`css/style.css` |
+
