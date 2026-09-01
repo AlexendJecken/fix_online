@@ -129,10 +129,10 @@ const Chat = (() => {
     const group = document.createElement('div');
     group.className = 'btn-group';
 
-    buttons.forEach(({ id, icon, label, action, primary = false }) => {
+    buttons.forEach(({ id, icon, label, action, primary = false, accent = false }) => {
       const btn = document.createElement('button');
       btn.id        = id;
-      btn.className = `quick-btn${primary ? ' primary' : ''}`;
+      btn.className = `quick-btn${primary ? ' primary' : ''}${accent ? ' accent' : ''}`;
       btn.setAttribute('data-action', action);
 
       // 安全組合 icon + label：用 DOM 操作避免 innerHTML XSS
@@ -193,12 +193,17 @@ const Chat = (() => {
     wrapper.innerHTML = `
       <div class="msg-avatar" aria-hidden="true">🤖</div>
       <div class="msg-content">
-        <div class="typing-indicator" aria-label="正在輸入" data-i18n-aria-label="typing.aria">
+        <div class="typing-indicator" data-i18n-aria-label="typing.aria">
           <span class="typing-dot"></span>
           <span class="typing-dot"></span>
           <span class="typing-dot"></span>
         </div>
       </div>`;
+    // ⚠️ 修正：aria-label 不可寫死中文常數，否則英文介面下，打字指示器
+    // 每次重新建立時仍會朗讀中文（data-i18n-aria-label 只在語言「切換」當下
+    // 重新掃描 DOM 才會生效，但此元素多為短暫顯示，切換當下通常不存在）。
+    // 改為建立當下就以目前語言取值。
+    wrapper.querySelector('.typing-indicator').setAttribute('aria-label', I18N.t('typing.aria'));
     typingEl = wrapper;
     _append(wrapper);
   }
@@ -253,6 +258,12 @@ const Chat = (() => {
       return;
     }
 
+    // 「開啟查詢視窗」特殊處理：只靜默重開 Modal，不停用按鈕群組，不顯示使用者訊息
+    if (action === 'open-query') {
+      QueryCase.open();
+      return;
+    }
+
     // 防止並發：處理中時忽略新的點擊
     if (_isProcessing) return;
     _isProcessing = true;
@@ -272,8 +283,9 @@ const Chat = (() => {
           _hideTyping();
           addBotMessage(_R().TEACH_CHOOSE);
           _addButtonGroup([
-            { id: 'btn-teach-win', icon: '🪟', label: `${_B().TEACH_WIN}`, action: 'teach-windows' },
-            { id: 'btn-teach-mac', icon: '🍎', label: _B().TEACH_MAC,         action: 'teach-mac'    }
+            { id: 'btn-teach-win',  icon: '🪟', label: `${_B().TEACH_WIN}`,  action: 'teach-windows' },
+            { id: 'btn-teach-mac',  icon: '🍎', label: _B().TEACH_MAC,         action: 'teach-mac'    },
+            { id: 'btn-teach-wifi', icon: '📡', label: _B().TEACH_WIFI,        action: 'teach-wifi'   }
           ]);
           break;
 
@@ -331,12 +343,37 @@ const Chat = (() => {
           break;
         }
 
+        case 'teach-wifi': {
+          _showTyping();
+          await _delay(800);
+          _hideTyping();
+          addBotMessage(_R().TEACH_WIFI);
+          WifiModal.open();
+          _addButtonGroup([
+            { id: 'btn-need-help-wifi', icon: '🆘', label: _B().NEED_HELP,   action: 'need-help'   },
+            { id: 'btn-back-main-wifi', icon: '🏠', label: _B().BACK_MAIN,  action: 'back-to-main' }
+          ]);
+          break;
+        }
+
         case 'back-to-main':
           _showTyping();
           await _delay(400);
           _hideTyping();
           addBotMessage(_R().BACK_TO_MAIN);
           _showMainButtons();
+          break;
+
+        case 'query':
+          _showTyping();
+          await _delay(500);
+          _hideTyping();
+          addBotMessage(_R().QUERY_PROMPT);
+          QueryCase.open();
+          _addButtonGroup([
+            { id: 'btn-open-query',      icon: '🔍', label: _B().QUERY,     action: 'open-query'   },
+            { id: 'btn-back-main-query', icon: '🏠', label: _B().BACK_MAIN, action: 'back-to-main' }
+          ]);
           break;
       }
     } finally {
@@ -350,9 +387,10 @@ const Chat = (() => {
 
   function _showMainButtons() {
     _addButtonGroup([
-      { id: 'btn-teach',   icon: '📚', label: _B().TEACH,                              action: 'teach'   },
-      { id: 'btn-setting', icon: '⚙️', label: _B().SETTING,                                action: 'setting' },
-      { id: 'btn-report',  icon: '🔧', label: _B().REPORT, action: 'report',  primary: true }
+      { id: 'btn-teach',   icon: '📚', label: _B().TEACH,   action: 'teach',   accent: true },
+      { id: 'btn-setting', icon: '⚙️', label: _B().SETTING, action: 'setting' },
+      { id: 'btn-query',   icon: '🔍', label: _B().QUERY,   action: 'query' },
+      { id: 'btn-report',  icon: '🔧', label: _B().REPORT,  action: 'report',  primary: true }
     ]);
   }
 
@@ -413,7 +451,7 @@ const Chat = (() => {
         // 顯示推薦按鈕（依判斷到的意圖）+ 主選單三顆按鈕讓使用者自行選擇
         _addButtonGroup([
           { id: 'btn-confirm-intent', icon: '✅', label: `${_B().CONFIRM_YES_PREFIX} ${label}`, action: _intentToAction(intent), primary: true },
-          { id: 'btn-confirm-teach',   icon: '📚', label: _B().TEACH,                               action: 'teach'   },
+          { id: 'btn-confirm-teach',   icon: '📚', label: _B().TEACH,                               action: 'teach',   accent: true },
           { id: 'btn-confirm-setting', icon: '⚙️', label: _B().SETTING,                                 action: 'setting' },
           { id: 'btn-confirm-report',  icon: '🔧', label: _B().REPORT, action: 'report'  }
         ]);
@@ -424,8 +462,9 @@ const Chat = (() => {
         case INTENTS.BUTTON_TEACH:
           addBotMessage(_R().TEACH_CHOOSE);
           _addButtonGroup([
-            { id: 'btn-teach-win-txt', icon: '🪟', label: `${_B().TEACH_WIN}`, action: 'teach-windows' },
-            { id: 'btn-teach-mac-txt', icon: '🍎', label: _B().TEACH_MAC,         action: 'teach-mac'    }
+            { id: 'btn-teach-win-txt',  icon: '🪟', label: `${_B().TEACH_WIN}`, action: 'teach-windows' },
+            { id: 'btn-teach-mac-txt',  icon: '🍎', label: _B().TEACH_MAC,         action: 'teach-mac'    },
+            { id: 'btn-teach-wifi-txt', icon: '📡', label: _B().TEACH_WIFI,        action: 'teach-wifi'   }
           ]);
           break;
 
@@ -453,6 +492,15 @@ const Chat = (() => {
           _addButtonGroup([
             { id: 'btn-open-report-txt',      icon: '📝', label: _B().OPEN_REPORT, action: 'open-report'   },
             { id: 'btn-back-main-report-txt', icon: '🏠', label: _B().BACK_MAIN,  action: 'back-to-main' }
+          ]);
+          break;
+
+        case INTENTS.BUTTON_QUERY:
+          addBotMessage(_R().QUERY_PROMPT);
+          QueryCase.open();
+          _addButtonGroup([
+            { id: 'btn-open-query-txt',      icon: '🔍', label: _B().QUERY,     action: 'open-query'   },
+            { id: 'btn-back-main-query-txt', icon: '🏠', label: _B().BACK_MAIN, action: 'back-to-main' }
           ]);
           break;
 
@@ -492,6 +540,7 @@ const Chat = (() => {
       BUTTON_TEACH:   'teach',
       BUTTON_SETTING: 'setting',
       BUTTON_REPORT:  'report',
+      BUTTON_QUERY:   'query',
       STICKER_PORT:   'report',
       NON_NETWORK:    'back-to-main'
     };
@@ -512,6 +561,14 @@ const Chat = (() => {
       </div>`;
     _append(wrapper);
     _showMainButtons();
+  }
+
+  /* 公開 API：查詢成功回呼（查詢結果顯示完後顯示後續按鈕） */
+  function onQuerySuccess() {
+    _addButtonGroup([
+      { id: 'btn-back-main-after-query', icon: '🏠', label: _B().BACK_MAIN,  action: 'back-to-main' },
+      { id: 'btn-report-after-query',   icon: '🔧', label: _B().REPORT,     action: 'report',      primary: true }
+    ]);
   }
 
   /* ══════════════════════════════════════
@@ -540,6 +597,9 @@ const Chat = (() => {
 
     /* 報修表單 */
     ReportForm.init();
+
+    /* 查詢案件 */
+    QueryCase.init();
 
     /* 送出按鈕 */
     sendBtnEl()?.addEventListener('click', () => {
@@ -606,7 +666,7 @@ const Chat = (() => {
     }
   }
 
-  return { init, addBotMessage, addUserMessage, onReportSuccess, getToken, refreshToken, getClientId };
+  return { init, addBotMessage, addUserMessage, onReportSuccess, onQuerySuccess, getToken, refreshToken, getClientId };
 })();
 
 /* ── 啟動 ── */
