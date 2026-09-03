@@ -1,7 +1,163 @@
 # 更新日誌 (Changelog)
 
-**版本 / Version**：v1.3.1  
-**最後更新 / Last Updated**：2026-08-09
+**版本 / Version**：v1.4.5  
+**最後更新 / Last Updated**：2026-08-29
+
+---
+
+## [v1.4.5] - 2026-08-29 (Wi-Fi Setup Guide, Post-Release Audit & CI Fix / Wi-Fi 設定教學、上線後全面稽核與 CI 修復)
+
+### 繁體中文
+
+本版本包含兩部分：(1) 追溯補齊上一版本上線後未同步文件化的「Wi-Fi 機設定教學」功能與「查詢完成後續按鈕」修復；(2) 針對上線後程式碼庫進行的全面稽核，修復 CI 失敗、i18n 涵蓋率缺口、無障礙焦點管理缺陷、註解錯字與死碼殘留。
+
+#### ✨ 新功能（回補文件 / Newly Documented Features）
+
+- **Wi-Fi 機設定教學 Modal**：教學選單新增第三個選項「Wi-Fi 機」，與既有 Windows / Mac 系統選項並列。純前端靜態 4 步驟圖文教學（① 連接電源與網路線 ② 連接裝置 ③ 進入後台管理介面 ④ 設定路由器模式與固定 IP），不呼叫 GAS 後端、不消耗任何頻率限制配額，Modal 支援 X 按鈕／關閉按鈕／遮罩點擊／ESC 四種關閉方式，並提供完整繁中英文對照（`js/wifi-modal.js`、`js/chat.js`、`js/config.js`、`js/i18n.js`、`index.html`、`css/style.css`）。
+- **查詢案件完成後顯示後續按鈕**：查詢報修案件狀態完成後，補上「回主選單／報修」按鈕，避免對話流程中斷，與報修成功後的體驗一致（`js/chat.js`、`js/query.js`）。
+
+#### 🛠️ 本次稽核修復（Audit Fixes）
+
+- **[BUG-44／高] CI Lint 失敗修復**：`eslint.config.js` 的瀏覽器端全域清單漏列新增的 `WifiModal` 模組，導致 `npx eslint .` 對 `js/chat.js` 回報 `no-undef` 錯誤，`.github/workflows/test.yml` 的 `npm run lint` 步驟因而失敗。已補上宣告，`npm test`（53/53）與 `npm run lint`（0 error）皆恢復綠燈。
+- **[BUG-45／中] 房號／床號／手機號碼欄位 i18n 缺口**：報修表單中 `field-room`、`field-bed`、`field-phone` 三個欄位的 placeholder 原為寫死英文（如 `"e.g. A123"`），缺少 `data-i18n-placeholder` 屬性與對應字典項目，導致繁體中文介面下仍顯示英文提示文字，與其餘欄位（姓名、學號）行為不一致。已補上 `form.room.placeholder`／`form.bed.placeholder`／`form.phone.placeholder` 中英字典項目與對應屬性。
+- **[BUG-46／中] 打字指示器 aria-label 語言切換失效**：`_showTyping()` 每次建立新的打字指示器 DOM 節點時，`aria-label` 屬性寫死中文「正在輸入」，僅在「語言切換當下」該節點恰好存在時才會被 `_applyToDom()` 重新掃描修正——但該節點屬短暫顯示元素，實務上幾乎不會遇到這個時機，導致英文介面下螢幕閱讀器仍朗讀中文。已改為建立當下即以 `I18N.t('typing.aria')` 依目前語言取值。
+- **[BUG-47／中] Wi-Fi 教學 Modal 無障礙焦點失效**：`WifiModal.open()` 呼叫 `document.getElementById('wifi-modal-title').focus()`，但該 `<h2>` 元素未加上 `tabindex="-1"`，屬不可程式化聚焦元素，`.focus()` 呼叫實際上靜默無效，鍵盤／螢幕閱讀器使用者開啟 Modal 時焦點不會被帶入。已於 `index.html` 補上 `tabindex="-1"`。同時補上開關時的 `document.body.style.overflow` 背景捲動鎖定／解除，與報修表單、查詢案件兩個既有 Modal 行為一致。
+- **[BUG-48／低] 註解錯字修正**：`js/intent.js` 「防止無限**迄迴**」修正為「防止無限**循環**」；`js/query.js` 「查詢**完是**：顯示返回主選單和報修按鈕」修正為「查詢**完成後**：顯示返回主選單和報修按鈕」。
+- **[BUG-49／低] 後端錯誤代碼一致性修正**：`gas/Code.gs` 的 `classifyIntent()` 在 `GEMINI_API_KEY` 未設定時，原本直接回傳完整中文句子作為 `error` 欄位（`'GEMINI_API_KEY 未在 Script Properties 中設定'`），與專案自 BUG-28／BUG-29 起確立的「一律回傳固定大寫代碼、詳細訊息僅記錄於 Logger」慣例不一致（雖然此路徑目前前端未直接顯示該文字，僅記錄於瀏覽器 console，非使用者可見的資訊揭露，但仍應統一慣例避免未來被誤用）。已改為固定代碼 `GEMINI_API_KEY_NOT_CONFIGURED`。
+- **[BUG-50／低] 死碼清理：報修表單 Modal 內成功畫面**：`index.html` 的 `#modal-success-view`、`js/report.js` 的 `successView` 變數與 `.has-success`／`.is-hidden` 樣式切換、`css/style.css` 對應的整段樣式與動畫（`.modal-success-view`、`.success-icon-wrap`、`.success-title` 等），以及僅供其使用的 `js/i18n.js` 字典項目 `success.title`／`success.desc`，經逐一 `grep` 確認自 v1.1.0 行為回復後已無任何程式路徑會觸發，予以移除。另移除同一區塊內完全未被任何 HTML 元素使用的 `.text-en` 樣式類別。
+- **[BUG-51／低] README 多語系備援分類器表格修復**：「🌐 多國語言備援分類器支援」表格第 19 項合併列出「埃及阿拉伯文」與「厄瓜多西班牙文」，但範例關鍵字欄位僅提供阿拉伯文範例、缺漏西班牙文範例，格式不完整。已補上西班牙文範例關鍵字，並加註說明：厄瓜多西班牙文與第 16 項墨西哥西班牙文共用同一組通用西班牙語關鍵字（未另外建置地區專屬詞彙），故兩者合併計為第 19 項、不獨立計數。
+
+#### 📄 文件同步（Documentation Sync）
+
+- `AGENTS.md` 檔案結構樹補上 `js/wifi-modal.js`
+- `doc/architecture.md` §3.1 前端模組表補上 `wifi-modal.js` 一列
+- `doc/requirements.md` §3.1 教學按鈕說明補上 Wi-Fi 機選項；新增 §3.7 Wi-Fi 機設定教學 Modal 需求說明
+- `doc/project-memory.md` 補上本次 Wi-Fi Modal 功能與稽核修復的決策記錄
+- `doc/todo.md` 新增「I 輪：Wi-Fi 機設定教學、查詢後續按鈕、全面稽核」章節
+- 全站（`package.json`、`README.md`、`CHANGELOG.md`、`AGENTS.md`、`doc/*.md`）版本號統一升級為 **v1.4.5**
+
+#### ⚠️ 待專案擁有者確認（本次稽核未逕行處理）
+
+- `doc/project-memory.md` 內記載一組專案擁有者已確認完成輪替、目前已失效的 Google Spreadsheet ID 明碼，用於說明 GitHub PR ref 歷史殘留議題。此做法與 `AGENTS.md` 規範 5「試算表 ID… 不得硬編碼於程式碼或任何文件（含 `doc/*.md`）中」字面上牴觸——即使該 ID 已失效，仍建議改為遮蔽格式（如 `1BUnG_...79uI`）以符合文件自身規範。本次稽核未逕行修改此段落，待專案擁有者確認後再處理。
+
+### English
+
+This release has two parts: (1) retroactively documenting the previously undocumented **Wi-Fi router setup guide** feature and the **post-query follow-up buttons** fix that shipped after v1.4.3; and (2) a full post-release audit that fixes a broken CI pipeline, i18n coverage gaps, an accessibility focus-management defect, stale comments, and orphaned dead code.
+
+#### ✨ New Features (Retroactively Documented)
+
+- **Wi-Fi router setup guide modal**: a third option, "Wi-Fi Router," was added to the Tutorials menu alongside the existing Windows/Mac options. It is a purely front-end, static 4-step walkthrough (power & cable, device connection, admin interface, router mode & static IP) that never calls the GAS backend and consumes no rate-limit quota. The modal supports four ways to close (✕ button, Close button, backdrop click, Escape key) and is fully bilingual (`js/wifi-modal.js`, `js/chat.js`, `js/config.js`, `js/i18n.js`, `index.html`, `css/style.css`).
+- **Follow-up buttons after a case query**: after a repair-case query completes, "Back to Main Menu" and "Request Repair" buttons are now shown, matching the experience after a successful repair submission and preventing the conversation from dead-ending (`js/chat.js`, `js/query.js`).
+
+#### 🛠️ Audit Fixes
+
+- **[BUG-44/High] Broken CI lint step**: `eslint.config.js`'s browser-global list never added the newly introduced `WifiModal` module, so `npx eslint .` reported a `no-undef` error in `js/chat.js`, failing the `npm run lint` step in `.github/workflows/test.yml`. Fixed by declaring the global; `npm test` (53/53) and `npm run lint` (0 errors) are green again.
+- **[BUG-45/Medium] Missing i18n on Room/Bed/Phone fields**: the `field-room`, `field-bed`, and `field-phone` inputs had hardcoded English placeholders (e.g. `"e.g. A123"`) with no `data-i18n-placeholder` attribute or dictionary entry, unlike the Name/Student-ID fields — so the Traditional Chinese UI still showed English placeholder text. Added `form.room.placeholder`/`form.bed.placeholder`/`form.phone.placeholder` entries in both languages and wired up the attributes.
+- **[BUG-46/Medium] Typing indicator aria-label ignored current language**: `_showTyping()` hardcoded `aria-label="正在輸入"` (Chinese) at element-creation time; it would only be corrected via `data-i18n-aria-label` if a language toggle happened to fire while the transient element existed, which in practice almost never happens — so screen-reader users on the English UI still heard Chinese. Fixed by reading `I18N.t('typing.aria')` at creation time.
+- **[BUG-47/Medium] Wi-Fi modal focus management broken**: `WifiModal.open()` called `.focus()` on `<h2 id="wifi-modal-title">`, but that element lacked `tabindex="-1"` and is therefore not programmatically focusable, so the call silently did nothing — keyboard/screen-reader users got no focus movement when the modal opened. Added `tabindex="-1"`. Also added the same background-scroll lock/unlock (`document.body.style.overflow`) used by the other two modals, which this one was missing.
+- **[BUG-48/Low] Comment typos**: fixed a garbled/nonsensical phrase in `js/intent.js` ("無限迄迴" → "無限循環", i.e. "infinite loop") and in `js/query.js` ("查詢完是" → "查詢完成後", i.e. "after the query completes").
+- **[BUG-49/Low] Backend error-code consistency**: `classifyIntent()` in `gas/Code.gs` returned a full Chinese sentence as the `error` field when `GEMINI_API_KEY` was unset, instead of the all-caps code convention established since BUG-28/29. Changed to `GEMINI_API_KEY_NOT_CONFIGURED` (this path isn't shown to end users today, only logged to the browser console, but the inconsistency was a latent risk).
+- **[BUG-50/Low] Dead code removal — in-modal success screen**: `#modal-success-view` in `index.html`, the `successView` variable and `.has-success`/`.is-hidden` toggles in `js/report.js`, the corresponding ~70-line CSS block and animations in `css/style.css`, and the `success.title`/`success.desc` i18n dictionary entries that existed only to feed it, were all verified (via exhaustive grep) to be unreachable since the success flow reverted to v1.1.0 behavior (chat-bubble success message instead of an in-modal screen). Removed. Also removed the entirely unused `.text-en` CSS class from the same region.
+- **[BUG-51/Low] README multilingual fallback table formatting**: row 19 of the "Multilingual Fallback Classifier" table combines "Egyptian Arabic" and "Ecuadorian Spanish" but only listed Arabic sample keywords, omitting Spanish examples. Added the missing Spanish examples and a footnote clarifying that Ecuadorian Spanish shares the same generic Spanish keyword set as row 16 (Mexican Spanish) rather than having its own region-specific vocabulary, which is why the two are counted as a single numbered entry.
+
+#### 📄 Documentation Sync
+
+- Added `js/wifi-modal.js` to the file tree in `AGENTS.md`
+- Added a `wifi-modal.js` row to the frontend module table in `doc/architecture.md` §3.1
+- Updated the Tutorials button description in `doc/requirements.md` §3.1 and added new §3.7 covering the Wi-Fi setup guide requirements
+- Added decision-log entries in `doc/project-memory.md` for both the Wi-Fi modal feature and this audit's fixes
+- Added a new "Round I" section to `doc/todo.md`
+- Bumped every version string across `package.json`, `README.md`, `CHANGELOG.md`, `AGENTS.md`, and `doc/*.md` to **v1.4.5**
+
+#### ⚠️ Flagged for Owner Confirmation (Not Acted On)
+
+- `doc/project-memory.md` documents a literal Google Spreadsheet ID that the project owner has confirmed is already rotated and no longer live, used as evidence for the GitHub PR-ref history-leak discussion. This literally contradicts `AGENTS.md` Rule 5 ("Spreadsheet ID... must not be hardcoded in code or any documentation, including `doc/*.md`"). Even though the ID is inactive, we recommend redacting it (e.g. `1BUnG_...79uI`) to comply with the project's own stated policy. This audit did not modify that passage; awaiting owner confirmation.
+
+---
+
+## [v1.4.3] - 2026-08-23 (Query Feature Documentation Consistency Sweep)
+
+本版本針對「查詢案件」功能（v1.4.0 新增）在各文件**頂層總覽/摘要章節**是否同步更新，進行全庫掃描；重點檢查模式為「細節章節已正確描述查詢功能，但頂層總覽/摘要未同步」是否重複發生於其他文件。
+
+### 📄 文件正確性修復 (Documentation Correctness Fixes)
+- **[BUG-41/低] `doc/architecture.md` §1 系統架構概覽圖修正**：頂層 mermaid 圖中 `GAS -> Sheet` 的邊僅標示「格式雙重強驗證 & 寫入」，未反映 `queryReport()` 實際會讀取試算表全部資料列並篩選比對學號的行為（§4.4 文字資料流原本就正確描述此讀取行為，僅頂層圖未同步）。已修正邊標籤為「報修：格式雙重強驗證 & 寫入 / 查詢：學號比對後讀取」。
+- **[BUG-42/低] `README.md` 端點計數自相矛盾修正**：「功能特色」章節（第 32 行）宣稱雙層流量限制「涵蓋 classify / report / counter_get / counter_increment **四個端點**」，漏列 `query`；此描述與同份文件「已知安全性說明」章節（第 154 行）正確寫的「**五組**雙層限流…`query` 使用者 10/分鐘、全域 40/分鐘」自相矛盾。已修正為「五個端點」並補上 `query`。
+- **[BUG-43/低] `doc/requirements.md` §1／§2 補上查詢功能**：§1 專案背景與 §2 系統角色（學生角色說明）僅提及「教學文件查詢、常見問題、發起報修通報」，未提及「查詢自己的報修案件進度」——這是 v1.4.0 就存在、且 §3.6 已有完整規格的核心功能，僅頂層背景/角色總覽未同步。已補上。
+
+### ✅ 本次掃描確認無問題的文件 (Verified Clean — No Action Needed)
+- `doc/data-model.md`、`doc/project-memory.md`、`doc/todo.md`、`AGENTS.md`：查詢功能相關內容（實體、決策記錄、開發輪次、檔案結構、限流表）均已正確涵蓋，未發現同類疏漏。
+- `doc/architecture.md` §3.1（前端模組表）、§4.4（查詢資料流）、§5.4.1（限流表）、§5.5.3（查詢學號驗證）、§5.6（查詢結果個資最小化）、§5.9（安全測試覆蓋）、§5.10（OWASP 對照）：皆已正確涵蓋查詢功能，無需修改。
+
+## [v1.4.2] - 2026-08-22 (Full Codebase-vs-Documentation Audit)
+
+
+本版本為全專案「程式碼 vs. 文件」逐行一致性稽核，範圍涵蓋全部原始碼、`doc/*.md`、`AGENTS.md`、`CHANGELOG.md`、`README.md`。稽核過程執行了完整測試（53/53 通過）、ESLint（0 error/0 warning）、`git blame`/`git log` 歷史考古，以及對 GitHub 遠端 PR ref 的實際機密殘留驗證。
+
+### 🛡️ 安全性修復與釐清 (Security Fixes & Clarifications)
+- **[BUG-34/資訊] Git 歷史機密殘留範圍釐清**：實測以 `git ls-remote` + `git fetch refs/pull/*/head` 驗證，確認舊版 Spreadsheet ID 目前仍可透過 GitHub 已關閉／已合併 PR 的 `refs/pull/*/head` 參照取得——這是 `git-filter-repo` + force push 的已知限制（無法觸及 PR ref），過去 `README.md`／`doc/architecture.md` 「已無洩漏風險」「已完成輪替」等描述未精確反映此限制。經與專案擁有者確認，**該 Spreadsheet ID 已完成輪替、舊 ID 已失效**，故已將三份文件（`README.md`、`doc/architecture.md`、`doc/project-memory.md`）更新為如實反映「PR ref 殘留但因輪替已無實質風險」的現況，而非模糊帶過。
+- **[BUG-35/低] CSP `connect-src` 移除不必要的網域**：`index.html` 的 Content-Security-Policy 原本白名單 `https://generativelanguage.googleapis.com`，但前端 JS 從未直接呼叫 Gemini API（僅 `gas/Code.gs` 後端呼叫），此為不必要的權限放寬，已移除，符合最小權限原則。
+- **[BUG-36/低] `.env.example` 補上遺漏的 `RECAPTCHA_SECRET_KEY`**：`AGENTS.md`／`gas/Code.gs` 皆將其列為必要的 Script Property（與 `GEMINI_API_KEY`、`SPREADSHEET_ID` 並列），但 `.env.example` 範本先前漏列，已補上並註明其為 Secret Key（非公開的 Site Key）。
+
+### 🐛 文件正確性修復 (Documentation Correctness Fixes)
+- **[BUG-37/中] CSS 亂碼註解全面修復**：`CHANGELOG.md` v1.3.1（BUG-09）曾宣稱已完成全站亂碼掃描修復，但本次稽核發現 `css/style.css` 仍有 14 處編碼損毀的中文註解殘留（第 84、633–635、820、835、915、921–923、932、949、960、962、964、966、995、1033 行），經 `git blame` 追蹤至 commit `ae2a0f3`（2026-08-09）引入且未被後續稽核抓出。原始正確文字已無法完整復原（損毀早於該 commit），已依上下文語意重建為可讀的繁體中文註解，不影響任何 CSS 選擇器或樣式規則。
+- **[BUG-38/低] `doc/architecture.md` §3.1 前端模組表補上 `js/query.js`**：該模組已在文件其他章節（§3.2、§4.4、§5.5.3、§5.10）與 `AGENTS.md` 檔案樹中提及，但主要模組總覽表遺漏此列，`CHANGELOG.md` BUG-32 僅修補了 `AGENTS.md`，未同步此表。
+- **[BUG-39/低] `maximum-scale=1.0` 過時敘述修正**：`doc/architecture.md` §5.8 與 `doc/todo.md` G 輪皆仍描述「viewport `maximum-scale=1.0`」為目前防止 iOS 自動縮放的機制，但經 `git log` 追蹤，此設定已於 2026-08-08 因違反 WCAG 1.4.4（使用者縮放）無障礙需求而移除，改由 `css/style.css` 於 ≤640px 寬度強制 `input`/`textarea` 使用 16px 字體達成同等效果。`doc/requirements.md` 已正確反映此變更，另兩份文件已同步修正。
+- **[BUG-40/低] 全站版本號統一升級為 v1.4.2**：`package.json`、`README.md`、`CHANGELOG.md`、`AGENTS.md`、`doc/architecture.md`、`doc/data-model.md`、`doc/project-memory.md`、`doc/requirements.md`、`doc/todo.md`。（升版前 `doc/architecture.md`／`doc/data-model.md` 仍停留在 v1.4.0，與其餘文件的 v1.4.1 不一致，一併修正。）
+
+### ✅ 本次稽核確認無問題的項目 (Verified Clean — No Action Needed)
+- `chat.js`／`query.js` 的 XSS 防護模式（`_esc()` 轉義 → `_renderMarkdown()` 渲染的順序）邏輯正確，未發現注入風險。
+- 目前工作目錄與 `main`／tag 分支歷史中無其他明碼機密（已用正則掃描 API Key、Spreadsheet ID 樣式）。
+- 速率限制（雙層 `_checkRateLimit`）、reCAPTCHA v3 驗證、一次性 token 機制、後端三段式驗證（必填→格式→截斷）均與文件描述一致。
+- `.github/workflows/test.yml` 已正確設定 `permissions: contents: read`（對應既有 BUG-17 修復）。
+- 測試套件（53 項）與 ESLint 3-environment flat config 均正常運作，符合文件宣稱。
+
+## [v1.4.1] - 2026-08-21 (Post-release patch)
+
+
+本版本為 v1.4.0 發布後的修補更新，主要修正文件漏列、UI 順序與部分安全/一致性問題。
+
+### 🛡️ 安全性與一致性修復 (Security & Consistency Fixes)
+- **[BUG-28/中] 後端錯誤訊息資訊洩漏修復**：`gas/Code.gs` 的 `writeReport()` 與 `queryReport()` 中「找不到工作表」的錯誤訊息原本會將內部設定值（`SHEET_NAME`）原樣回傳給前端，現已改為回傳固定代碼 `SHEET_NOT_FOUND`，詳細內容僅留於 `Logger.log`（修復弱化版 CWE-209 缺陷）。
+- **[BUG-29/低] 修正英文介面下部分後端錯誤訊息顯示中文的問題**：後端的必填/格式驗證錯誤與頻率限制訊息（「請求過於頻繁...」）原本為寫死的繁體中文字串，現已改為固定大寫代碼（如 `RATE_LIMITED`、`VALIDATION_NAME_REQUIRED` 等），並在前端 `report.js` 與 `query.js` 中對應雙語文字。
+
+### 🐛 功能性錯誤修復 (Bug Fixes)
+- **[BUG-30/低] Teams 複製按鈕圖示還原修復**：`js/teams.js` 的 `copyAccountName()` 原本使用 `textContent` 還原內容，導致按鈕內的 SVG 圖示結構被攤平。現改用 `innerHTML` 儲存並還原，確保 DOM 結構完整。
+- **[UI-01] 主選單按鈕順序調整**：`js/chat.js` 主選單按鈕順序改為「教學 → 常見問題 → **查詢案件** → **報修**」（原為報修在查詢前）。
+
+### 📄 文件修正 (Documentation Fixes)
+- **[BUG-20] `intent.js` 備援模型數註解修正**：修正註解中殘留的「9 個模型」為「6 個模型」。
+- **[BUG-21~26] `doc/requirements.md` 與 `doc/project-memory.md` 更新**：補上 v1.4.0 遺漏的查詢功能按鈕與需求說明、限流數（4→5）、測試數（42→53），並於 `project-memory.md` 補齊 v1.4.0 的技術決策。
+- **[BUG-27] `index.html` 腳本載入順序註解修正**：補上漏列的 `i18n` 與 `query`。
+- **[BUG-31] `README.md` 限流分組數修正**：第 153 行的限流組數由「四組」修正為「五組」，與實際程式碼及其他文件一致。
+- **[BUG-32] `AGENTS.md` 檔案結構圖修正**：補上漏列的 `js/query.js` 模組。
+- **[BUG-33] `README.md` 斷鏈引用修正**：移除「Git 歷史機密殘留」表格中失效的「見上方 WARNING 區塊」引用。
+
+## [v1.4.0] - 2026-08-21 (Query Feature, Security Fix & Full Audit)
+
+本版本新增報修案件查詢功能，並對全程式碼庫進行 360° 稽核，修復安全漏洞、前後端語意不一致、文件過時等問題。
+
+### ✨ 新功能 (New Feature)
+- **報修案件查詢**：學生輸入學號可查詢自己的報修案件狀態。
+  - 後端：`gas/Code.gs` 新增 `queryReport()`（學號語法驗證、雙層限流 10/40 次/分鐘、僅回傳安全欄位）
+  - 前端：新增 `js/query.js` 查詢模組（Modal + API 呼叫 + 結果渲染）
+  - 意圖辨識：`BUTTON_QUERY` 意圖加入 Gemini Prompt 與 Rule-based 備援分類器
+  - CSS：新增查詢 Modal 與案件狀態標籤樣式（✅ 已完成 / 🔧 已派人 / ⏳ 待處理）
+
+### 🛡️ 安全性修復 (Security Fixes)
+- **[BUG-13/高] 修復 `_renderResults()` XSS 漏洞**：`js/query.js` 將試算表欄位（使用者可控資料）嵌入 template string 前先做 HTML 轉義（`_esc()`）。防止惡意學生在報修表單填入 `<script>` 等內容觸發 XSS。
+
+### 🐛 功能性錯誤修復 (Bug Fixes)
+- **[BUG-12/中] 修復前端學號驗證語意不一致**：`query.js` `_validate()` 原本對空學號與格式錯誤顯示相同訊息（「格式錯誤」），現分拆為兩種訊息：空學號→「請輸入學號」、格式錯誤→「學號格式錯誤」，與後端 GAS 回傳語意一致。
+
+### 📄 文件修正 (Documentation Fixes)
+- **[BUG-14] 修復 `doc/architecture.md` §4.2 殘留的「9 個模型」**：v1.3.1 已於 §3.3 修正此誤，但 §4.2 資料流段落漏更，現一併修正為「6 個模型」。
+- **[BUG-15] 修復 `doc/todo.md` 查詢功能狀態**：查詢功能已完成，從「未來優化（v2）」移至 G 輪已完成清單。
+- **[BUG-18] `AGENTS.md` 路由原則補充 `query` action 說明**，並補上流量限制參數。
+- **[BUG-19] 全站文件補入 `queryReport()` 該功能說明**：`README.md` 功能特色、安全表格；`AGENTS.md` 流量限制說明；`doc/architecture.md` 後端函式表、資料流 §4.4、Mermaid 架構圖。
+- **全站版本號統一升級為 v1.4.0**：`package.json`、`README.md`、`CHANGELOG.md`、`AGENTS.md`、`doc/architecture.md`、`doc/todo.md`、`doc/requirements.md`、`doc/project-memory.md`。
+
+### 🧪 測試
+- `npm test` 53 pass / 0 fail；`npm run lint` 0 error / 0 warning
 
 ---
 

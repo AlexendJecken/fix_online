@@ -29,8 +29,10 @@ module.exports = [
         Chat: 'writable',
         Intent: 'readonly',
         ReportForm: 'writable',
+        QueryCase: 'writable',
         Counter: 'writable',
         Teams: 'writable',
+        WifiModal: 'writable',
         grecaptcha: 'readonly'
       }
     },

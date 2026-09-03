@@ -1,16 +1,16 @@
 # 逢甲大學福星宿舍網路報修 Chatbot — 需求規格書
 # FCU Fuxing Dormitory Network Repair Assistant — Requirements Specification
 
-**版本 / Version**：v1.3.1  
+**版本 / Version**：v1.4.5  
 **建立日期 / Created**：2026-07-17  
-**最後更新 / Last Updated**：2026-08-09 (v1.3.1: Bug-fix, Rate-limit Tuning & Doc Alignment Release)  
+**最後更新 / Last Updated**：2026-08-29 (v1.4.5: 補上 Wi-Fi 機設定教學需求說明)  
 **專案倉庫 / Repository**：https://github.com/chinglin-k/FCU_NE_Chat_Bot
 
 ---
 
 ## 1. 專案背景 (Project Background)
 
-@chinglin-k 需要一套自動化工具，協助學生快速取得網路相關教學資源，並能自助發起報修通報，減少處理重複性問題的時間。
+@chinglin-k 需要一套自動化工具，協助學生快速取得網路相關教學資源，並能自助發起報修通報與查詢自己的報修案件進度，減少處理重複性問題的時間。
 
 ---
 
@@ -18,7 +18,7 @@
 
 | 角色 / Role | 說明 / Description |
 |---|---|
-| **學生（使用者）/ Student User** | 透過 Chatbot 自助查詢教學文件、查詢常見問題，或發起報修通報（介面全面支援中英雙語對照 / Fully bilingual UI）|
+| **學生（使用者）/ Student User** | 透過 Chatbot 自助查詢教學文件、查詢常見問題、發起報修通報，或查詢自己的報修案件進度（介面全面支援中英雙語對照 / Fully bilingual UI）|
 | **管理員（網管人員）/ Network Admin** | 接收 Google 試算表中的通報案件，進行派人維修與案件追蹤 / Receive & manage repair requests |
 
 ---
@@ -27,12 +27,13 @@
 
 ### 3.1 選項按鈕介面與雙語支援 (UI & Bilingual Support)
 
-Chatbot 啟動後顯示三個主要選項按鈕，Header 右上角另有 Teams 常駐連結。全站控制元件皆提供**繁體中文與英文對照**：
+Chatbot 啟動後顯示四個主要選項按鈕，Header 右上角另有 Teams 常駐連結。全站控制元件皆提供**繁體中文與英文對照**：
 
 | 按鈕 / Button | 觸發行為 / Action |
 |---|---|
-| 📚 教學 / Tutorials | 顯示 Windows / Mac 系統選擇，提供 PDF 教學文件連結 |
+| 📚 教學 / Tutorials | 顯示 Windows / Mac / Wi-Fi 機三個系統選擇；Windows、Mac 提供 PDF 教學文件連結，Wi-Fi 機顯示站內 4 步驟設定教學 Modal（v1.4.4 新增） |
 | ⚙️ 常見問題 / FAQ | 常見問題一覽：WiFi 帳號密碼、轉接器驅動程式、寢室 WiFi 訊號、冷氣電費儲值等 |
+| 🔍 查詢案件 / Check My Cases | 開啟查詢 Modal，輸入學號查詢報修案件狀態（v1.4.0 新增） |
 | 🔧 我要實體協助、報修 / Request On-site Help | 開啟報修表單 Modal |
 | 👤 聯絡我們 / Contact Us（Header 常駐） | 開啟 Teams chat 深連結，聯絡「福星宿舍網路報修平台」帳號 |
 
@@ -71,14 +72,34 @@ Chatbot 啟動後顯示三個主要選項按鈕，Header 右上角另有 Teams �
 - v1.3.1 起，`counter_get` / `counter_increment` 皆依前端 `clientId` 個別限流
   （分別為 30 次/分鐘、3 次/分鐘），全域上限分別為 120 次/分鐘、500 次/分鐘
 
+### 3.6 報修案件查詢 (Case Query — v1.4.0)
+
+- 學生輸入學號即可查詢自己的報修案件狀態
+- 前後端皆獨立驗證學號格式（1 位英文字母 + 7 位數字），且分拆「空學號」與「格式錯誤」兩種錯誤訊息
+- 回傳欄位刻意排除姓名與手機號碼（個資最小化），防止惡意使用者以他人學號試探取得敏感個資
+- 所有欄位值在前端渲染前均做 HTML 轉義（`_esc()`），防止試算表資料觸發 XSS
+- 已加入頻率限制：依 clientId 每人每分鐘最多 10 次，全體使用者每分鐘總計最多 40 次
+- 管理者操作：在試算表的「是否派人」/「是否完成」/「備註」欄位填寫內容，學生即可透過查詢功能看到進度
+
+### 3.7 Wi-Fi 機設定教學 Modal (Wi-Fi Router Setup Guide — v1.4.4)
+
+- 於「教學」選單新增第三個選項「Wi-Fi 機」，與 Windows / Mac 並列
+- 純前端靜態內容，不呼叫 GAS 後端、不消耗任何頻率限制配額
+- 4 步驟圖文教學：① 連接電源與網路線 ② 連接裝置（電腦 / 手機兩種情境）
+  ③ 進入後台管理介面 ④ 設定路由器模式與固定 IP
+- Modal 支援 X 按鈕、「關閉」按鈕、遮罩點擊、ESC 鍵四種關閉方式，
+  與報修表單 Modal、查詢案件 Modal 的互動模式一致
+- 全部步驟文字提供繁體中文與英文對照
+
 ---
 
 ## 4. 非功能需求 (Non-Functional Requirements)
 
 | 項目 / Item | 要求 / Specifications |
 |---|---|
-| 安全性 / Security | Gemini Key 與 reCAPTCHA Secret 僅存於 GAS Script Properties；通訊全面採用 **POST Body** + **一次性 Token** + **Client ID 四層限流（classify/report/counter_get/counter_increment）** + **reCAPTCHA v3** + **Strict CSP**；後端例外一律回傳固定代碼，不外洩原始錯誤訊息（CWE-209 防護） |
+| 安全性 / Security | Gemini Key 與 reCAPTCHA Secret 僅存於 GAS Script Properties；通訊全面採用 **POST Body** + **一次性 Token** + **Client ID 五組限流（classify/report/query/counter_get/counter_increment）** + **reCAPTCHA v3** + **Strict CSP**；後端例外一律回傳固定代碼，不外洩原始錯誤訊息（CWE-209 防護） |
 | 效能 / Performance | LLM 分類時顯示打字指示器，提升等待體驗 |
 | 相容性 / Compatibility | 支援桌機與手機瀏覽器，Viewport 允許無障礙縮放，使用 `100dvh` 行動版高度切齊 |
 | 語言 / Language | 介面全面提供繁體中文與英文對照 (Fully bilingual UI support)；v1.3.1 修正可維修時間 4 個欄位的 aria-label 中英文切換失效問題 |
-| 測試 / Testing | 原生 Node.js 測試框架與 `gas-mocks.js` 單元測試 (42/42 Passing) 與 ESLint 規範（0 error / 0 warning）|
+| 測試 / Testing | 原生 Node.js 測試框架與 `gas-mocks.js` 單元測試（53/53 Passing）與 ESLint 規範（0 error / 0 warning）|
+
